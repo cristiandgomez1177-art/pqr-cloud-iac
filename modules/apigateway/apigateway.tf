@@ -1,20 +1,25 @@
-resource "aws_apigatewayv2_api" "pqr_api" {
-  name          = var.api_name
-  protocol_type = "HTTP"
+resource "aws_api_gateway_rest_api" "pqr_api" {
+  name = var.api_name
 }
 
-resource "aws_apigatewayv2_integration" "pqr_integration" {
-  api_id           = aws_apigatewayv2_api.pqr_api.id
-  integration_type = "AWS_PROXY"
-  integration_uri  = var.lambda_arn
+resource "aws_api_gateway_resource" "pqr_resource" {
+  rest_api_id = aws_api_gateway_rest_api.pqr_api.id
+  parent_id   = aws_api_gateway_rest_api.pqr_api.root_resource_id
+  path_part   = "pqr"
 }
 
-resource "aws_apigatewayv2_route" "pqr_route" {
-  api_id    = aws_apigatewayv2_api.pqr_api.id
-  route_key = "POST /pqr"
-  target    = "integrations/${aws_apigatewayv2_integration.pqr_integration.id}"
+resource "aws_api_gateway_method" "pqr_method" {
+  rest_api_id   = aws_api_gateway_rest_api.pqr_api.id
+  resource_id   = aws_api_gateway_resource.pqr_resource.id
+  http_method   = "POST"
+  authorization = "NONE"
 }
 
-output "api_endpoint" {
-  value = aws_apigatewayv2_api.pqr_api.api_endpoint
+resource "aws_api_gateway_integration" "pqr_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.pqr_api.id
+  resource_id             = aws_api_gateway_resource.pqr_resource.id
+  http_method             = aws_api_gateway_method.pqr_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.lambda_arn
 }
